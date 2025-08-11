@@ -5,10 +5,11 @@ import openai
 import chromadb
 import hashlib
 
+from enum import Enum
+
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
-
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -32,14 +33,21 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 class ChatRequest(BaseModel):
     prompt: str
     advanced_flow: bool = True
-
-# Structure of the JSON the backend will send back
+    
 class ChatResponse(BaseModel):
     response: str
     book_title: str | None = None # Optional field for the recommended book title
 
+class TTSVoice(str, Enum):
+    alloy = "alloy"
+    echo = "echo"
+    fable = "fable"
+    onyx = "onyx"
+    nova = "nova"
+    shimmer = "shimmer"
 class TTSRequest(BaseModel):
     text: str
+    voice: TTSVoice = TTSVoice.nova
 
 class STTResponse(BaseModel):
     text: str
@@ -59,16 +67,16 @@ os.makedirs("static/audio", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.post("/speech-to-text", response_model=STTResponse)
-async def stt_handler(file: UploadFile = File(...)):
+async def stt_handler(file: UploadFile = File(...), language: str = Form("en")):
     """
-    Accepts an audio file and transcribes it to text using OpenAI's Whisper model.
+    Accepts an audio file and an optional language code, then transcribes to text.
     """
     print(f"-> Received audio file for transcription: {file.filename}")
     try:
         transcription = openai.audio.transcriptions.create(
             model="whisper-1", 
             file=(file.filename, file.file),
-            language="en"
+            language=language
         )
         
         print(f"<- Transcription successful: '{transcription.text}'")
@@ -84,6 +92,7 @@ async def tts_handler(request: TTSRequest):
     Converts text to speech and returns the audio file.
     Implements simple caching to avoid re-generating the same audio.
     """
+    print(f"-> Generating audio with voice: '{request.voice.value}'")
     try:
         hashed_filename = hashlib.md5(request.text.encode()).hexdigest()
         speech_file_path = f"static/audio/{hashed_filename}.mp3"
@@ -93,7 +102,7 @@ async def tts_handler(request: TTSRequest):
             print(f"-> Generating new audio file for: '{request.text[:30]}...'")
             response = openai.audio.speech.create(
                 model="tts-1",
-                voice="nova", # other voices: alloy, echo, fable, onyx, nova, shimmer
+                voice=request.voice.value,
                 input=request.text
             )
             response.stream_to_file(speech_file_path)
