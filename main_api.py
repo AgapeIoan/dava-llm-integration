@@ -1,12 +1,17 @@
-import openai
-import chromadb
 import os
 import json
+
+import openai
+import chromadb
+import hashlib
+
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from book_tools import get_summary_by_title
 
@@ -33,6 +38,9 @@ class ChatResponse(BaseModel):
     response: str
     book_title: str | None = None # Optional field for the recommended book title
 
+class TTSRequest(BaseModel):
+    text: str
+
 app = FastAPI(
     title="Book Recommender API",
     description="An API for recommending books using RAG and OpenAI Tools."
@@ -43,6 +51,37 @@ db_client = chromadb.PersistentClient(path=CHROMA_PATH)
 openai_ef = embedding_functions.OpenAIEmbeddingFunction(api_key=api_key, model_name=EMBEDDING_MODEL)
 collection = db_client.get_collection(name=COLLECTION_NAME, embedding_function=openai_ef)
 print("Connection to Vector DB successful.")
+
+os.makedirs("static/audio", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.post("/text-to-speech")
+async def tts_handler(request: TTSRequest):
+    """
+    Converts text to speech and returns the audio file.
+    Implements simple caching to avoid re-generating the same audio.
+    """
+    try:
+        hashed_filename = hashlib.md5(request.text.encode()).hexdigest()
+        speech_file_path = f"static/audio/{hashed_filename}.mp3"
+
+        # Check if the file already exists (our simple cache)
+        if not os.path.exists(speech_file_path):
+            print(f"-> Generating new audio file for: '{request.text[:30]}...'")
+            response = openai.audio.speech.create(
+                model="tts-1",
+                voice="nova", # other voices: alloy, echo, fable, onyx, nova, shimmer
+                input=request.text
+            )
+            response.stream_to_file(speech_file_path)
+        else:
+            print(f"-> Serving cached audio file for: '{request.text[:30]}...'")
+
+        return FileResponse(path=speech_file_path, media_type="audio/mpeg")
+
+    except Exception as e:
+        print(f"An error occurred in TTS generation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate audio.")
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_handler(request: ChatRequest):
