@@ -8,7 +8,7 @@ import hashlib
 from dotenv import load_dotenv
 from chromadb.utils import embedding_functions
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -41,6 +41,9 @@ class ChatResponse(BaseModel):
 class TTSRequest(BaseModel):
     text: str
 
+class STTResponse(BaseModel):
+    text: str
+
 app = FastAPI(
     title="Book Recommender API",
     description="An API for recommending books using RAG and OpenAI Tools."
@@ -54,6 +57,26 @@ print("Connection to Vector DB successful.")
 
 os.makedirs("static/audio", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.post("/speech-to-text", response_model=STTResponse)
+async def stt_handler(file: UploadFile = File(...)):
+    """
+    Accepts an audio file and transcribes it to text using OpenAI's Whisper model.
+    """
+    print(f"-> Received audio file for transcription: {file.filename}")
+    try:
+        transcription = openai.audio.transcriptions.create(
+            model="whisper-1", 
+            file=(file.filename, file.file),
+            language="en"
+        )
+        
+        print(f"<- Transcription successful: '{transcription.text}'")
+        return STTResponse(text=transcription.text)
+
+    except Exception as e:
+        print(f"An error occurred during transcription: {e}")
+        raise HTTPException(status_code=500, detail="Failed to transcribe audio.")
 
 @app.post("/text-to-speech")
 async def tts_handler(request: TTSRequest):
