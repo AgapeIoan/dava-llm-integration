@@ -36,6 +36,28 @@ collection = client.get_collection(
 )
 print("Connection successful.")
 
+def is_prompt_inappropriate(prompt: str) -> bool:
+    """
+    Checks if a user's prompt is inappropriate using the OpenAI Moderation API.
+    Returns True if the prompt is flagged, False otherwise.
+    """
+    print("-> Checking prompt for inappropriate content...")
+    try:
+        response = openai.moderations.create(input=prompt)
+        # The response contains a list of results, one for each input string. We sent one.
+        is_flagged = response.results[0].flagged
+        
+        if is_flagged:
+            print("<- Prompt was flagged as inappropriate.")
+        else:
+            print("<- Prompt is clean.")
+            
+        return is_flagged
+    except Exception as e:
+        print(f"An error occurred during moderation check: {e}")
+        # Fail-safe: if moderation fails, we block the prompt to be safe.
+        return True
+
 def get_book_recommendation(user_prompt: str, advanced_flow: bool = True):
     """
     Handles the book recommendation flow with a choice between two strategies.
@@ -137,10 +159,17 @@ if __name__ == "__main__":
     print("Welcome to the Book Recommendation Chatbot!")
     print("Ask me for a book recommendation based on your interests. Type 'exit' to quit.")
     
+    USE_ADVANCED_FLOW = True 
+
     while True:
         user_input = input("\nYou: ")
         if user_input.lower() == 'exit':
             print("Goodbye!")
             break
         
+        if is_prompt_inappropriate(user_input):
+            print("\n--- Chatbot Response ---")
+            print("I'm sorry, I cannot process requests containing inappropriate content. Please ask me something else about books.")
+            continue
+
         get_book_recommendation(user_input)
