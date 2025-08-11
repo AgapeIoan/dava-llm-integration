@@ -94,7 +94,8 @@ async def tts_handler(request: TTSRequest):
     """
     print(f"-> Generating audio with voice: '{request.voice.value}'")
     try:
-        hashed_filename = hashlib.md5(request.text.encode()).hexdigest()
+        cache_key = request.text + request.voice.value
+        hashed_filename = hashlib.md5(cache_key.encode()).hexdigest()
         speech_file_path = f"static/audio/{hashed_filename}.mp3"
 
         # Check if the file already exists (our simple cache)
