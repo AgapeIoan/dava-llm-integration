@@ -2,11 +2,11 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+from .routers import chat, audio, image
 
 # Load environment variables before anything else
 load_dotenv()
 
-from .routers import chat, audio, image
 
 app = FastAPI(
     title="Book Recommender API",
