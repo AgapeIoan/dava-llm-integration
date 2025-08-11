@@ -52,6 +52,14 @@ class TTSRequest(BaseModel):
 class STTResponse(BaseModel):
     text: str
 
+class ImageGenerationRequest(BaseModel):
+    book_title: str
+    book_summary: str
+
+class ImageGenerationResponse(BaseModel):
+    image_url: str
+    revised_prompt: str
+
 app = FastAPI(
     title="Book Recommender API",
     description="An API for recommending books using RAG and OpenAI Tools."
@@ -65,6 +73,39 @@ print("Connection to Vector DB successful.")
 
 os.makedirs("static/audio", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.post("/generate-image", response_model=ImageGenerationResponse)
+async def image_generation_handler(request: ImageGenerationRequest):
+    """
+    Generates an image based on a book title and summary using DALL-E 3.
+    """
+    print(f"-> Received request to generate image for: '{request.book_title}'")
+    
+    dalle_prompt = (
+        f"Create a highly detailed, evocative, and artistic book cover concept for a book titled '{request.book_title}'. "
+        f"The story is about: '{request.book_summary}'. "
+        "The style should be a digital painting, capturing the main themes of the story. "
+        "Do NOT include any text, letters, or words on the image."
+    )
+
+    try:
+        response = openai.images.generate(
+            model="dall-e-3",
+            prompt=dalle_prompt,
+            size="1024x1024",  # Can be 1024x1024, 1792x1024, or 1024x1792
+            quality="standard", # 'standard' or 'hd'
+            n=1, # Always 1 for DALL-E 3
+        )
+
+        image_url = response.data[0].url
+        revised_prompt = response.data[0].revised_prompt
+        
+        print(f"<- Image generated successfully. URL: {image_url}")
+        return ImageGenerationResponse(image_url=image_url, revised_prompt=revised_prompt)
+
+    except Exception as e:
+        print(f"An error occurred during image generation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate image.")
 
 @app.post("/speech-to-text", response_model=STTResponse)
 async def stt_handler(file: UploadFile = File(...), language: str = Form("en")):
