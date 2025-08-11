@@ -205,3 +205,56 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- Node.js / Frontend ---
+# Folderul masiv cu dependintele Node
+node_modules/
+
+# Directorul de build pentru Vite
+# (chiar daca este in subfolderul 'frontend', aceasta regula il va prinde)
+dist/
+
+# Fisiere de log pentru npm, yarn, pnpm
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache-ul Vite
+.vite/
+
+
+# --- Fisiere Generare de Aplicatie ---
+# Fisierele audio generate de TTS sunt cache, nu continut sursa.
+static/audio/*
+# Adaugam o exceptie pentru a pastra folderul gol in Git, daca dorim
+!static/audio/.gitkeep
+
+
+# --- Sisteme de Operare & IDE-uri ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Fisiere de configurare specifice IDE-urilor
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+
+chroma_db/
+package-lock.json
+*.m4a
+*.mp3
+*.mp4
+*.wav
+*.mov
