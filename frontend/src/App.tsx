@@ -1,29 +1,34 @@
 import { useState } from 'react';
-
-type Message = {
-  sender: 'user' | 'bot';
-  text: string;
-};
+import type { Message } from './types';
+import { postChatMessage } from './services/apiService';
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
-  
   const [currentInput, setCurrentInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
-    if (currentInput.trim() === '') return;
+  const handleSendMessage = async () => {
+    if (currentInput.trim() === '' || isLoading) return;
 
     const userMessage: Message = { sender: 'user', text: currentInput };
-    setMessages([...messages, userMessage]);
-
-    // TODO: Aici vom adauga logica pentru a apela backend-ul
-    // Pentru moment, simulam un raspuns de la bot
-    setTimeout(() => {
-      const botResponse: Message = { sender: 'bot', text: "This is a placeholder response." };
-      setMessages(prevMessages => [...prevMessages, botResponse]);
-    }, 1000); // Asteptam 1 secunda pentru a simula un delay
-
+    setMessages(prev => [...prev, userMessage]);
     setCurrentInput('');
+    setIsLoading(true);
+
+    try {
+      const chatResponse = await postChatMessage(userMessage.text);
+      const botMessage: Message = { sender: 'bot', text: chatResponse.response };
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error(error);
+      const errorMessage: Message = { 
+        sender: 'bot', 
+        text: 'Oops! Something went wrong. Please try again later.' 
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,9 +46,12 @@ function App() {
           value={currentInput}
           onChange={(e) => setCurrentInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-          placeholder="Ask for a book recommendation..."
+          placeholder={isLoading ? 'The bot is thinking...' : 'Ask for a book recommendation...'}
+          disabled={isLoading}
         />
-        <button onClick={handleSendMessage}>Send</button>
+        <button onClick={handleSendMessage} disabled={isLoading}>
+          {isLoading ? '...' : 'Send'} {/* <-- Schimba textul/starea butonului */}
+        </button>
       </div>
     </div>
   );

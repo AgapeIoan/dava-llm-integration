@@ -20,6 +20,18 @@ async def chat_handler(request: ChatRequest):
     results = collection.query(query_texts=[request.prompt], n_results=3)
     context = "\n\n".join(results['documents'][0])
     
+    system_prompt_strict = f"""
+You are a book-finding engine. Your single most important rule is to ONLY use the books provided in the CONTEXT section.
+It is forbidden to recommend, mention, or allude to any book title that is not explicitly present in the CONTEXT.
+From the provided CONTEXT, find the single best book that matches the user's request.
+Then, you MUST call the `get_summary_by_title` tool with the exact title of that book.
+
+CONTEXT:
+---
+{context}
+---
+"""
+
     system_prompt = f"""
 You are a helpful and friendly book recommendation chatbot. Your goal is to:
 1. Recommend ONE single book based on the user's request and the provided context.
