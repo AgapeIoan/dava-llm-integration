@@ -1,0 +1,16 @@
+# Ignora folderul masiv cu dependintele Node
+node_modules
+
+# Ignora fisierele Git
+.git
+.gitignore
+
+# Ignora fisierele de build (daca exista)
+dist
+
+# Ignora fisierele specifice IDE
+.vscode
+.idea
+
+# Fisiere de log
+npm-debug.log*

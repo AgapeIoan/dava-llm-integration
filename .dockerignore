@@ -1,0 +1,21 @@
+# Ignora folderul mediului virtual
+venv
+.venv
+
+# Ignora cache-ul Python
+__pycache__
+
+# Ignora fisierele Git
+.git
+.gitignore
+
+# Ignora fisierele specifice IDE
+.vscode
+.idea
+
+# Ignora orice fisier de configurare Docker
+*.Dockerfile
+docker-compose.yml
+
+# Ignora folderul frontend (backend-ul nu are nevoie de el)
+frontend/
