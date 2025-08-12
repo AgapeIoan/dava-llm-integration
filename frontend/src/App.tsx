@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 import type { Message } from './types';
 import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
-import { postChatMessage, transcribeAudio, fetchTtsAudio } from './services/apiService';
-import { generateImage } from './services/apiService';
+import { streamChatMessage, fetchTtsAudio, generateImage } from './services/apiService';
+import { transcribeAudio } from './services/apiService';
 import { ImageModal } from './components/ImageModal';
 
 function App() {
@@ -17,27 +17,51 @@ function App() {
     if (isLoading || text.trim() === '') return;
 
     const userMessage: Message = { sender: 'user', text };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage, { sender: 'bot', text: '' }]);
     setIsLoading(true);
 
-    try {
-      const chatResponse = await postChatMessage(text);
-      const botMessage: Message = { 
-        sender: 'bot', 
-        text: chatResponse.response,
-        bookTitle: chatResponse.book_title || undefined
-      };      
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      const errorMessage: Message = { 
-        sender: 'bot', 
-        text: 'Oops! Something went wrong. Please try again later.' 
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+    const onChunk = (chunk: string) => {
+      setMessages(prev => {
+        const lastMessageIndex = prev.length - 1;
+        const lastMessage = prev[lastMessageIndex];
+        let updatedMessage = { ...lastMessage };
+
+        // Verificam daca primim titlul cartii
+        if (chunk.startsWith("TITLE::")) {
+          const title = chunk.replace("TITLE::", "").trim();
+          if (title) { // Adaugam titlul doar daca nu e gol
+            updatedMessage.bookTitle = title;
+          }
+        } else {
+          // Altfel, adaugam textul la mesaj
+          updatedMessage.text += chunk;
+        }
+        
+        // Cream un nou array si inlocuim ultimul mesaj
+        const newMessages = [...prev];
+        newMessages[lastMessageIndex] = updatedMessage;
+        return newMessages;
+      });
+    };
+    
+    const onSuccess = () => {
+        setIsLoading(false);
+    };
+
+    const onError = (error: Error) => {
+        setMessages(prev => {
+            const lastMessage = prev[prev.length - 1];
+            // Afisam o eroare mai clara in UI
+            const updatedMessage = { ...lastMessage, text: `Oops! Something went wrong.` };
+            const newMessages = [...prev];
+            newMessages[prev.length-1] = updatedMessage
+            return newMessages;
+        });
+        setIsLoading(false);
+    };
+
+    // Apelam un singur serviciu, cel de streaming
+    await streamChatMessage(text, onChunk, onSuccess, onError);
   };
 
   const handleAudioStop = async (blobUrl: string) => {
@@ -52,9 +76,7 @@ function App() {
     try {
       const { text } = await transcribeAudio(blobUrl);
       console.log("Transcription result:", text);
-      
       await handleSendMessage(text);
-
     } catch (error) {
       console.error("Error transcribing audio:", error);
       const errorMessage: Message = { 
@@ -70,21 +92,17 @@ function App() {
     if (audioRef.current) {
       audioRef.current.pause();
     }
-
     if (playingIndex === index) {
       setPlayingIndex(null);
       return;
     }
-
     try {
       setPlayingIndex(index);
       const audioBlob = await fetchTtsAudio(text);
       const audioUrl = URL.createObjectURL(audioBlob);
-      
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
       audio.play();
-
       audio.onended = () => {
         setPlayingIndex(null);
       };
@@ -110,10 +128,8 @@ function App() {
         idx === messageIndex ? { ...msg, isImageLoading: true } : msg
       )
     );
-
     try {
       const imageResponse = await generateImage(targetMessage.bookTitle, targetMessage.text);
-      
       setMessages(prevMessages => 
         prevMessages.map((msg, idx) => 
           idx === messageIndex ? { ...msg, imageUrl: imageResponse.image_url, isImageLoading: false } : msg
@@ -131,25 +147,24 @@ function App() {
 
   return (
     <main className="app-container">
-    <div className="chat-container">
-    <h1>Book Recommendation Chatbot</h1>
-    <div className="chat-window-wrapper">
-      <ChatWindow 
-        messages={messages}
-        onPlayAudio={handlePlayAudio}
-        playingIndex={playingIndex}
-        onGenerateImage={handleGenerateImage}
-        onImageClick={handleImageClick}
-      />
+      <div className="chat-container">
+        <h1>Book Recommendation Chatbot</h1>
+        <div className="chat-window-wrapper">
+          <ChatWindow 
+            messages={messages}
+            onPlayAudio={handlePlayAudio}
+            playingIndex={playingIndex}
+            onGenerateImage={handleGenerateImage}
+            onImageClick={handleImageClick}
+          />
+        </div>
+        <MessageInput 
+          onSendMessage={handleSendMessage} 
+          onAudioStop={handleAudioStop}
+          isLoading={isLoading}
+        />
       </div>
-      <MessageInput 
-        onSendMessage={handleSendMessage} 
-        onAudioStop={handleAudioStop}
-        isLoading={isLoading}
-      />
-    </div>
-
-    {modalImageUrl && <ImageModal imageUrl={modalImageUrl} onClose={handleCloseModal} />}
+      {modalImageUrl && <ImageModal imageUrl={modalImageUrl} onClose={handleCloseModal} />}
     </main>
   );
 }

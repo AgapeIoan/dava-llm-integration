@@ -78,3 +78,41 @@ export const generateImage = async (book_title: string, book_summary: string): P
 
   return response.json();
 };
+
+export const streamChatMessage = async (
+  prompt: string,
+  onChunkReceived: (chunk: string) => void,
+  onSuccess: () => void,
+  onError: (error: Error) => void
+) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, advanced_flow: true }),
+    });
+
+    if (!response.body) {
+      throw new Error('Response body is null.');
+    }
+    if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        onSuccess(); // Notificam ca stream-ul s-a incheiat
+        break;
+      }
+      const chunk = decoder.decode(value);
+      onChunkReceived(chunk); // Trimitem fiecare bucata catre UI
+    }
+  } catch (error) {
+    console.error("Streaming failed:", error);
+    onError(error as Error);
+  }
+};
