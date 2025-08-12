@@ -1,15 +1,20 @@
 import hashlib
+
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 
 from api.models import TTSRequest, STTResponse
-
 from api.dependencies import openai_client
 
 router = APIRouter(
     prefix="/audio",
     tags=["Audio Processing"]
 )
+
+STATIC_DIR = Path("static/audio")
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/text-to-speech")
 async def tts_handler(request: TTSRequest):
@@ -21,7 +26,7 @@ async def tts_handler(request: TTSRequest):
     try:
         cache_key = request.text + request.voice.value
         hashed_filename = hashlib.md5(cache_key.encode()).hexdigest()
-        speech_file_path = f"static/audio/{hashed_filename}.mp3"
+        speech_file_path = STATIC_DIR / f"{hashed_filename}.mp3"
 
         if not speech_file_path.exists():
             response = openai_client.audio.speech.create(

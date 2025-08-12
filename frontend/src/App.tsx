@@ -1,26 +1,34 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Message } from './types';
-import { postChatMessage } from './services/apiService';
+import { ChatWindow } from './components/ChatWindow';
+import { MessageInput } from './components/MessageInput';
+import { postChatMessage, transcribeAudio, fetchTtsAudio } from './services/apiService';
+import { generateImage } from './services/apiService';
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
-  const handleSendMessage = async () => {
-    if (currentInput.trim() === '' || isLoading) return;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    const userMessage: Message = { sender: 'user', text: currentInput };
+  const handleSendMessage = async (text: string) => {
+    if (isLoading || text.trim() === '') return;
+
+    const userMessage: Message = { sender: 'user', text };
     setMessages(prev => [...prev, userMessage]);
-    setCurrentInput('');
     setIsLoading(true);
 
     try {
-      const chatResponse = await postChatMessage(userMessage.text);
-      const botMessage: Message = { sender: 'bot', text: chatResponse.response };
+      const chatResponse = await postChatMessage(text);
+      const botMessage: Message = { 
+        sender: 'bot', 
+        text: chatResponse.response,
+        bookTitle: chatResponse.book_title || undefined
+      };      
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error(error);
+      console.error("Error sending message:", error);
       const errorMessage: Message = { 
         sender: 'bot', 
         text: 'Oops! Something went wrong. Please try again later.' 
@@ -31,28 +39,101 @@ function App() {
     }
   };
 
+  const handleAudioStop = async (blobUrl: string) => {
+    if (!blobUrl || isLoading) {
+      console.log("Empty or invalid audio blob, or already loading.");
+      return;
+    }
+    
+    setIsLoading(true);
+    console.log("Audio stopped. Transcribing...");
+
+    try {
+      const { text } = await transcribeAudio(blobUrl);
+      console.log("Transcription result:", text);
+      
+      await handleSendMessage(text);
+
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+      const errorMessage: Message = { 
+        sender: 'bot', 
+        text: 'Sorry, I had trouble understanding the audio. Please try again.' 
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      setIsLoading(false);
+    }
+  };
+
+  const handlePlayAudio = async (text: string, index: number) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    if (playingIndex === index) {
+      setPlayingIndex(null);
+      return;
+    }
+
+    try {
+      setPlayingIndex(index);
+      const audioBlob = await fetchTtsAudio(text);
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.play();
+
+      audio.onended = () => {
+        setPlayingIndex(null);
+      };
+    } catch (error) {
+      console.error("Failed to play audio:", error);
+      setPlayingIndex(null);
+    }
+  };
+
+  const handleGenerateImage = async (messageIndex: number) => {
+    const targetMessage = messages[messageIndex];
+    if (!targetMessage || !targetMessage.bookTitle) return;
+
+    setMessages(prevMessages => 
+      prevMessages.map((msg, idx) => 
+        idx === messageIndex ? { ...msg, isImageLoading: true } : msg
+      )
+    );
+
+    try {
+      const imageResponse = await generateImage(targetMessage.bookTitle, targetMessage.text);
+      
+      setMessages(prevMessages => 
+        prevMessages.map((msg, idx) => 
+          idx === messageIndex ? { ...msg, imageUrl: imageResponse.image_url, isImageLoading: false } : msg
+        )
+      );
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+      setMessages(prevMessages => 
+        prevMessages.map((msg, idx) => 
+          idx === messageIndex ? { ...msg, isImageLoading: false } : msg
+        )
+      );
+    }
+  };
+
   return (
     <div className="chat-container">
-      <div className="chat-window">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.sender}`}>
-            <p>{msg.text}</p>
-          </div>
-        ))}
-      </div>
-      <div className="chat-input-area">
-        <input
-          type="text"
-          value={currentInput}
-          onChange={(e) => setCurrentInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-          placeholder={isLoading ? 'The bot is thinking...' : 'Ask for a book recommendation...'}
-          disabled={isLoading}
-        />
-        <button onClick={handleSendMessage} disabled={isLoading}>
-          {isLoading ? '...' : 'Send'} {/* <-- Schimba textul/starea butonului */}
-        </button>
-      </div>
+      <ChatWindow 
+        messages={messages}
+        onPlayAudio={handlePlayAudio}
+        playingIndex={playingIndex}
+        onGenerateImage={handleGenerateImage}
+      />
+      <MessageInput 
+        onSendMessage={handleSendMessage} 
+        onAudioStop={handleAudioStop}
+        isLoading={isLoading}
+      />
     </div>
   );
 }
