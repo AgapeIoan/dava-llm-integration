@@ -1,5 +1,7 @@
 import json
 import re
+
+from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -8,6 +10,15 @@ from api.dependencies import collection, openai_client
 from book_tools import get_summary_by_title
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+try:
+    PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parents[2] / "prompt.txt"
+    with open(PROMPT_TEMPLATE_PATH, "r", encoding="utf-8") as f:
+        PROMPT_TEMPLATE = f.read()
+    print("Prompt template loaded successfully.")
+except FileNotFoundError:
+    print("ERROR: prompt.txt not found. Please create it in the project root.")
+    PROMPT_TEMPLATE = "You are a helpful assistant. Context: {context}" # Un fallback simplu
 
 async def stream_and_moderate_generator(book_title, messages):
     """
@@ -76,16 +87,7 @@ async def chat_handler(request: ChatRequest):
     context = "\n\n".join(results['documents'][0])
     
     # Augmentation
-    system_prompt = f"""
-You are a helpful and friendly book recommendation chatbot. Your goal is to:
-1. Recommend ONE single book based on the user's request and the provided context.
-2. After making the recommendation, you MUST call the `get_summary_by_title` tool.
-Only recommend books found in the following context.
----
-CONTEXT:
-{context}
----
-"""
+    system_prompt = PROMPT_TEMPLATE.format(context=context)
     messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": request.prompt}]
     tools = [{"type": "function", "function": {"name": "get_summary_by_title", "description": "Get a book's summary by title.", "parameters": {"type": "object", "properties": {"title": {"type": "string"}}, "required": ["title"]}}}]
 
@@ -109,6 +111,10 @@ CONTEXT:
 
     # Adaugam rezultatul tool-ului la istoria conversatiei
     messages.append({"tool_call_id": tool_call.id, "role": "tool", "name": "get_summary_by_title", "content": summary})
-    
+    priming_instruction = {
+        "role": "system",
+        "content": "You have successfully retrieved the book summary. Now, present your complete response to the user. Start with a warm, friendly, and conversational sentence to introduce your recommendation, as instructed in your persona. Then, seamlessly integrate the detailed summary you retrieved. Conclude with a friendly closing remark."
+    }
+    messages.append(priming_instruction)
     # Returnam Raspunsul Final prin Streaming cu Moderare
     return StreamingResponse(stream_and_moderate_generator(book_title, messages), media_type="text/event-stream")
