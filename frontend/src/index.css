@@ -1,185 +1,251 @@
-/* Resetari de baza si stiluri globale */
+/* 1. Definirea variabilelor de culoare si a fontului */
+:root {
+  --font-sans: 'Inter', sans-serif;
+  --background: #ffffff;
+  --foreground: #020817;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --primary: #2563eb;
+  --primary-foreground: #fafafa;
+  --border: #e2e8f0;
+  --radius: 0.5rem;
+}
+
+/* 2. Resetari si stiluri de baza */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f0f2f5;
+  font-family: var(--font-sans);
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+/* 3. Layout-ul principal */
+#root {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  padding: 1rem;
 }
 
-/* Containerul principal al chat-ului */
 .chat-container {
-  width: 600px;
-  height: 80vh;
-  max-height: 800px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 640px;
+  height: 90vh;
+  background-color: var(--background);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
-/* Fereastra unde apar mesajele */
-.chat-window {
+h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-window-wrapper {
   flex-grow: 1;
-  padding: 20px;
   overflow-y: auto;
+  padding: 1rem;
+}
+
+/* 4. Stilurile pentru bulele de chat */
+.chat-window {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1rem;
 }
 
-/* Stilul individual pentru fiecare mesaj */
-.message {
-  padding: 10px 15px;
-  border-radius: 18px;
-  max-width: 70%;
-  word-wrap: break-word;
+.message-container {
+  display: flex;
+  width: 100%;
+}
+.message-container.user {
+  justify-content: flex-end;
+}
+.message-container.bot {
+  justify-content: flex-start;
 }
 
-.message p {
+.message-content {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-bubble {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  line-height: 1.5;
+  position: relative;
+}
+
+.message-container.user .message-bubble {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-bottom-right-radius: 0.25rem;
+}
+.message-container.bot .message-bubble {
+  background-color: var(--muted);
+  color: var(--foreground);
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* Stiluri pentru a randa corect continutul Markdown */
+.prose {
+  font-size: 0.95rem;
+}
+.prose p {
   margin: 0;
 }
-
-/* Mesajul utilizatorului, aliniat la dreapta */
-.message.user {
-  background-color: #007bff;
-  color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 4px;
+.prose strong {
+  font-weight: 600;
 }
 
-/* Mesajul bot-ului, aliniat la stanga */
-.message.bot {
-  background-color: #e9e9eb;
-  color: #333;
-  align-self: flex-start;
-  border-bottom-left-radius: 4px;
+/* 5. Actiuni pentru mesaje (butoane) */
+.message-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding-top: 0.5rem;
 }
 
-/* Zona de input de la baza */
+.action-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+}
+.action-btn:hover {
+  color: var(--foreground);
+}
+
+/* 6. Stilurile pentru zona de input */
 .chat-input-area {
   display: flex;
-  padding: 15px;
-  border-top: 1px solid #ddd;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
 }
 
 .chat-input-area input {
   flex-grow: 1;
-  border: 1px solid #ccc;
-  border-radius: 18px;
-  padding: 10px 15px;
-  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
   outline: none;
+  transition: border-color 0.2s;
 }
-
 .chat-input-area input:focus {
-  border-color: #007bff;
+  border-color: var(--primary);
 }
 
 .chat-input-area button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 18px;
-  padding: 10px 20px;
-  margin-left: 10px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.chat-input-area button:hover {
-  background-color: #0056b3;
-}
-
-.mic-button {
-  background: none;
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 20px;
+  height: 42px;
+  width: 42px;
+  border-radius: var(--radius);
+  border: none;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   cursor: pointer;
-  margin-right: 10px;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s;
+  flex-shrink: 0; /* Previne micsorarea butoanelor */
 }
-
-.mic-button:hover {
-  background-color: #f0f0f0;
+.chat-input-area button.mic-button {
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
 }
-
-.mic-button.recording {
-  background-color: #ff4136; /* Rosu cand inregistreaza */
-  border-color: #ff4136;
+.chat-input-area button.mic-button:hover {
+  background-color: var(--muted);
+}
+.chat-input-area button.mic-button.recording {
+  background-color: #dc2626;
+  border-color: #dc2626;
   color: white;
 }
-
-.message {
-  position: relative;
-  padding-right: 40px;
+.chat-input-area button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.play-audio-btn {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: none;
-  border: none;
+/* 7. Stiluri pentru imagine si spinner */
+.message-image-container {
+  align-self: flex-start;
+  margin-top: 0rem; /* atasat de bula de chat */
+}
+.message-image {
+  max-width: 320px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
   cursor: pointer;
-  font-size: 16px;
-  opacity: 0.5;
-  transition: opacity 0.2s;
 }
-
-.message:hover .play-audio-btn {
-  opacity: 1;
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
-
-/* Stil pentru a evidentia mesajul care este redat */
-.message.playing {
-  background-color: #d1e7dd;
-}
-
-.book-actions {
-  margin-top: 10px;
-}
-
-.generate-image-btn {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.book-cover {
-  max-width: 100%;
-  border-radius: 8px;
-  margin-top: 10px;
-}
-
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: #09f;
-  animation: spin 1s ease infinite;
-}
-
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 8. Stiluri pentru modal */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+.modal-content img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  border-radius: var(--radius);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 24px;
+  line-height: 32px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }

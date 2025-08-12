@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useReactMediaRecorder } from 'react-media-recorder';
-
+import { Mic, Send } from 'lucide-react';
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
   onAudioStop: (audioUrl: string) => void;
@@ -34,7 +34,7 @@ const AudioRecorder = ({ onStop, onStart }: { onStop: (audioUrl: string) => void
             className={`mic-button ${isRecording ? 'recording' : ''}`}
             onClick={handleMicClick}
         >
-            🎤
+          <Mic size={18} />
         </button>
     );
 };
@@ -65,7 +65,7 @@ export const MessageInput = ({ onSendMessage, onAudioStop, isLoading }: MessageI
         disabled={isLoading}
       />
       <button onClick={handleSendClick} disabled={isLoading}>
-        {isLoading ? '...' : 'Send'}
+        {isLoading ? '...' : <Send size={18} />}
       </button>
     </div>
   );

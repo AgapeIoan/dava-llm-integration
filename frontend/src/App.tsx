@@ -4,12 +4,13 @@ import { ChatWindow } from './components/ChatWindow';
 import { MessageInput } from './components/MessageInput';
 import { postChatMessage, transcribeAudio, fetchTtsAudio } from './services/apiService';
 import { generateImage } from './services/apiService';
+import { ImageModal } from './components/ImageModal';
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-
+  const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleSendMessage = async (text: string) => {
@@ -93,6 +94,13 @@ function App() {
     }
   };
 
+  const handleImageClick = (imageUrl: string) => {
+    setModalImageUrl(imageUrl);
+  };
+  const handleCloseModal = () => {
+    setModalImageUrl(null);
+  };
+
   const handleGenerateImage = async (messageIndex: number) => {
     const targetMessage = messages[messageIndex];
     if (!targetMessage || !targetMessage.bookTitle) return;
@@ -122,19 +130,27 @@ function App() {
   };
 
   return (
+    <main className="app-container">
     <div className="chat-container">
+    <h1>Book Recommendation Chatbot</h1>
+    <div className="chat-window-wrapper">
       <ChatWindow 
         messages={messages}
         onPlayAudio={handlePlayAudio}
         playingIndex={playingIndex}
         onGenerateImage={handleGenerateImage}
+        onImageClick={handleImageClick}
       />
+      </div>
       <MessageInput 
         onSendMessage={handleSendMessage} 
         onAudioStop={handleAudioStop}
         isLoading={isLoading}
       />
     </div>
+
+    {modalImageUrl && <ImageModal imageUrl={modalImageUrl} onClose={handleCloseModal} />}
+    </main>
   );
 }
 
