@@ -49,10 +49,11 @@ function App() {
     };
 
     const onError = (error: Error) => {
+        // Folosim variabila 'error' pentru a o afisa in consola
+        console.error("Streaming error caught in UI:", error); 
         setMessages(prev => {
             const lastMessage = prev[prev.length - 1];
-            // Afisam o eroare mai clara in UI
-            const updatedMessage = { ...lastMessage, text: `Oops! Something went wrong.` };
+            const updatedMessage = { ...lastMessage, text: 'Oops! Something went wrong. Please try again later.' };
             const newMessages = [...prev];
             newMessages[prev.length-1] = updatedMessage
             return newMessages;
