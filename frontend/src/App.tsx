@@ -7,7 +7,9 @@ import { transcribeAudio } from './services/apiService';
 import { ImageModal } from './components/ImageModal';
 
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
+const [messages, setMessages] = useState<Message[]>([
+  { sender: 'bot', text: "Hello! I'm the Smart Librarian. How can I help you find your next book today?" }
+]);
   const [isLoading, setIsLoading] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
