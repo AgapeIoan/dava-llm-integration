@@ -74,6 +74,9 @@ This is the easiest and most reliable way to run the entire application.
 
 4.  **Build and run the containers:**
     ```bash
+    cd frontend
+    npm install
+    cd ..
     docker-compose up --build
     ```
 
