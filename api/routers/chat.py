@@ -92,7 +92,7 @@ async def chat_handler(request: ChatRequest):
     tools = [{"type": "function", "function": {"name": "get_summary_by_title", "description": "Get a book's summary by title.", "parameters": {"type": "object", "properties": {"title": {"type": "string"}}, "required": ["title"]}}}]
 
     # Primul Apel LLM (pentru a alege cartea)
-    response = openai_client.chat.completions.create(model="gpt-4o-mini", messages=messages, tools=tools, tool_choice="auto")
+    response = openai_client.chat.completions.create(model="gpt-4o-mini", messages=messages, tools=tools, tool_choice={"type": "function", "function": {"name": "get_summary_by_title"}})
     response_message = response.choices[0].message
     messages.append(response_message)
     
