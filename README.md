@@ -1,5 +1,7 @@
 # AI Book Recommendation Chatbot
 
+![Application Showcase](assets/screenshots/showcase.png)
+
 This project is a full-stack, multimodal AI chatbot that provides personalized book recommendations. Built with a Python/FastAPI backend and a React frontend, it leverages OpenAI's models to deliver an intelligent and interactive user experience.
 
 The core of the application is a RAG (Retrieval-Augmented Generation) pipeline that uses a local **ChromaDB** vector store to ground its recommendations in a defined knowledge base. The chatbot is enhanced with multimodal capabilities, including voice commands (Speech-to-Text), audio responses (Text-to-Speech), and AI-powered image generation for book cover concepts.
@@ -17,6 +19,24 @@ The core of the application is a RAG (Retrieval-Augmented Generation) pipeline t
     -   Implements content moderation for both user input and AI-generated output to ensure safe conversations.
     -   Features an advanced, multi-layered system prompt designed to prevent prompt injection, enforce strict operational rules, and handle adversarial queries gracefully.
 -   **Modern Tech Stack:** Built with a FastAPI backend and a React (Vite + TypeScript) frontend, fully containerized with Docker for easy setup and deployment.
+
+## 🧠 Intelligent & Robust Behavior
+
+Beyond simple keyword-based recommendations, the chatbot is designed to handle nuanced, abstract, and even emotional user inputs gracefully, all while staying within its operational guardrails.
+
+**Case Study: Handling Emotional Input**
+
+The following example demonstrates the chatbot's ability to perform advanced semantic retrieval and maintain its core function with an empathetic tone, even when faced with a non-topical query.
+
+![Empathetic Response Demo](assets/screenshots/empathetic-response.png)
+
+In this interaction, the system demonstrates several key capabilities:
+
+1.  **Emotional Recognition:** The bot correctly identifies the user's emotional state ("upset") and responds with an appropriate, empathetic acknowledgment.
+2.  **Advanced Semantic Connection:** Instead of failing, the RAG pipeline connects the abstract concept of "being upset" to the themes of "comfort," "joy," and "personal growth" found in the summary of *Pride and Prejudice*.
+3.  **Maintaining Scope (Guardrails):** Despite the empathetic opening, the chatbot immediately pivots back to its core, mandated function: recommending a book from its knowledge base. It does not attempt to act as a therapist, thus respecting its operational boundaries.
+
+This behavior showcases a robust and responsibly designed AI system that is both helpful and safe.
 
 ## 🏛️ Project Architecture
 
